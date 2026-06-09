@@ -8,6 +8,7 @@ namespace CSharpGame
         public int Level { get; set; } = 1;
         public float Xp { get; set; } = 0f;
         public int Gold { get; set; } = 0;
+        public string ClassType { get; set; } = "knight";
 
         public int Vigor { get; set; } = 10;
         public int Strength { get; set; } = 10;

@@ -44,6 +44,12 @@ namespace CSharpGame
             set => Data.AttackType = value;
         }
 
+        public string AllowedClass
+        {
+            get => Data.AllowedClass;
+            set => Data.AllowedClass = value;
+        }
+
         public int Damage => (int)Math.Round((Data.BaseDamage + UpgradeLevel * 3) * (Prefix == "Sắc Bén" || Suffix == "Hủy Diệt" ? 1.2f : 1.0f));
         public float Defense => Data.BaseDefense + UpgradeLevel * 1f;
         public float CritChance => Data.BaseCritChance + (Suffix == "Chí Mạng" ? 0.05f : 0f);

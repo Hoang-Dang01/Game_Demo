@@ -8,6 +8,7 @@ namespace CSharpGame
     public class Player : Entity
     {
         public string Name { get; set; } = "Kirito";
+        public string ClassType { get; set; } = "knight";
         public int Level { get; set; } = 1;
         public float Xp { get; set; } = 0f;
         public int Gold { get; set; } = 0;
@@ -48,6 +49,38 @@ namespace CSharpGame
         public Player()
         {
             Radius = 16f;
+            RecalculateAttributes();
+            Hp = MaxHp;
+            Mp = MaxMp;
+        }
+
+        public void InitializeClass(string classType)
+        {
+            ClassType = classType.ToLower();
+            switch (ClassType)
+            {
+                case "knight":
+                    Vigor = 10; Strength = 12; Dexterity = 8; Intelligence = 5; Vitality = 15;
+                    break;
+                case "assassin":
+                    Vigor = 5; Strength = 10; Dexterity = 15; Intelligence = 6; Vitality = 8;
+                    break;
+                case "archer":
+                    Vigor = 5; Strength = 8; Dexterity = 14; Intelligence = 8; Vitality = 10;
+                    break;
+                case "mage":
+                    Vigor = 3; Strength = 5; Dexterity = 8; Intelligence = 15; Vitality = 6;
+                    break;
+                case "support":
+                    Vigor = 7; Strength = 6; Dexterity = 8; Intelligence = 12; Vitality = 12;
+                    break;
+                case "summoner":
+                    Vigor = 6; Strength = 7; Dexterity = 8; Intelligence = 11; Vitality = 10;
+                    break;
+                default:
+                    Vigor = 10; Strength = 10; Dexterity = 10; Intelligence = 10; Vitality = 10;
+                    break;
+            }
             RecalculateAttributes();
             Hp = MaxHp;
             Mp = MaxMp;

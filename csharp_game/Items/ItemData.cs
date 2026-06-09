@@ -8,6 +8,7 @@ namespace CSharpGame
         public string Rarity { get; set; } = "Common"; // Common, Uncommon, Rare, Epic, Legendary, Unique
         public string SlotType { get; set; } = "Weapon"; // Weapon, Helmet, Armor, Gloves, Boots, Ring, Necklace, Material, Heart
         public string AttackType { get; set; } = "melee"; // "melee", "ranged_arrow", "ranged_magic"
+        public string AllowedClass { get; set; } = "";
 
         // Base Stats
         public int BaseDamage { get; set; } = 0;

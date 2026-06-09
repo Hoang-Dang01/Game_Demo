@@ -18,7 +18,7 @@ namespace CSharpGame
             // States
             GameState gameState = GameState.Lobby;
             string nickname = "Explorer";
-            string selectedWeaponType = "sword"; // "sword", "bow", "wand"
+            string selectedClass = "knight"; // "knight", "assassin", "archer", "mage", "support", "summoner"
 
             // Game Session Variables
             Player player = new Player();
@@ -247,25 +247,33 @@ namespace CSharpGame
                     // Check Clicks for selections
                     Vector2 mousePos = Raylib.GetMousePosition();
 
-                    // Weapon Select boxes
-                    Rectangle rectSword = new Rectangle(Config.ScreenWidth / 2 - 190, 330, 100, 100);
-                    Rectangle rectBow = new Rectangle(Config.ScreenWidth / 2 - 50, 330, 100, 100);
-                    Rectangle rectWand = new Rectangle(Config.ScreenWidth / 2 + 90, 330, 100, 100);
+                    // Class Select boxes (Row 1: Knight, Assassin, Archer | Row 2: Mage, Support, Summoner)
+                    Rectangle rectKnight = new Rectangle(Config.ScreenWidth / 2 - 200, 320, 120, 90);
+                    Rectangle rectAssassin = new Rectangle(Config.ScreenWidth / 2 - 60, 320, 120, 90);
+                    Rectangle rectArcher = new Rectangle(Config.ScreenWidth / 2 + 80, 320, 120, 90);
+
+                    Rectangle rectMage = new Rectangle(Config.ScreenWidth / 2 - 200, 425, 120, 90);
+                    Rectangle rectSupport = new Rectangle(Config.ScreenWidth / 2 - 60, 425, 120, 90);
+                    Rectangle rectSummoner = new Rectangle(Config.ScreenWidth / 2 + 80, 425, 120, 90);
 
                     if (Raylib.IsMouseButtonPressed(MouseButton.Left))
                     {
-                        if (Raylib.CheckCollisionPointRec(mousePos, rectSword)) selectedWeaponType = "sword";
-                        if (Raylib.CheckCollisionPointRec(mousePos, rectBow)) selectedWeaponType = "bow";
-                        if (Raylib.CheckCollisionPointRec(mousePos, rectWand)) selectedWeaponType = "wand";
+                        if (Raylib.CheckCollisionPointRec(mousePos, rectKnight)) selectedClass = "knight";
+                        if (Raylib.CheckCollisionPointRec(mousePos, rectAssassin)) selectedClass = "assassin";
+                        if (Raylib.CheckCollisionPointRec(mousePos, rectArcher)) selectedClass = "archer";
+                        if (Raylib.CheckCollisionPointRec(mousePos, rectMage)) selectedClass = "mage";
+                        if (Raylib.CheckCollisionPointRec(mousePos, rectSupport)) selectedClass = "support";
+                        if (Raylib.CheckCollisionPointRec(mousePos, rectSummoner)) selectedClass = "summoner";
 
                         // Connect Button Click
-                        Rectangle btnStart = new Rectangle(Config.ScreenWidth / 2 - 140, 480, 280, 50);
+                        Rectangle btnStart = new Rectangle(Config.ScreenWidth / 2 - 140, 540, 280, 50);
                         if (Raylib.CheckCollisionPointRec(mousePos, btnStart))
                         {
                             player.Name = string.IsNullOrWhiteSpace(nickname) ? "Explorer" : nickname;
+                            player.InitializeClass(selectedClass);
                             
                             // Generate starting weapon
-                            Item startingWeapon = ItemDatabase.GenerateStartingWeapon(selectedWeaponType);
+                            Item startingWeapon = ItemDatabase.GenerateStartingWeapon(selectedClass);
                             player.Equipment.Equip(startingWeapon, "Weapon");
 
                             // Start with 3 Portal Stones
@@ -283,7 +291,7 @@ namespace CSharpGame
                         }
 
                         // Load Game Button
-                        Rectangle btnLoad = new Rectangle(Config.ScreenWidth / 2 - 140, 550, 280, 45);
+                        Rectangle btnLoad = new Rectangle(Config.ScreenWidth / 2 - 140, 610, 280, 45);
                         if (Raylib.CheckCollisionPointRec(mousePos, btnLoad))
                         {
                             TryLoadSavedGame();
@@ -824,31 +832,38 @@ namespace CSharpGame
                     Raylib.DrawRectangleLines(Config.ScreenWidth / 2 - 140, 245, 280, 40, Color.DarkGray);
                     Raylib.DrawText(nickname, Config.ScreenWidth / 2 - 120, 257, 18, Color.White);
 
-                    Raylib.DrawText("CHỌN VŨ KHÍ KHỞI ĐẦU:", Config.ScreenWidth / 2 - 140, 305, 13, Color.LightGray);
+                    Raylib.DrawText("CHỌN LỚP NHÂN VẬT:", Config.ScreenWidth / 2 - 140, 295, 13, Color.LightGray);
 
-                    Rectangle rectSword = new Rectangle(Config.ScreenWidth / 2 - 190, 330, 100, 100);
-                    Rectangle rectBow = new Rectangle(Config.ScreenWidth / 2 - 50, 330, 100, 100);
-                    Rectangle rectWand = new Rectangle(Config.ScreenWidth / 2 + 90, 330, 100, 100);
+                    Rectangle rectKnight = new Rectangle(Config.ScreenWidth / 2 - 200, 320, 120, 90);
+                    Rectangle rectAssassin = new Rectangle(Config.ScreenWidth / 2 - 60, 320, 120, 90);
+                    Rectangle rectArcher = new Rectangle(Config.ScreenWidth / 2 + 80, 320, 120, 90);
 
-                    void DrawSelectBox(Rectangle r, string title, string sub, bool selected)
+                    Rectangle rectMage = new Rectangle(Config.ScreenWidth / 2 - 200, 425, 120, 90);
+                    Rectangle rectSupport = new Rectangle(Config.ScreenWidth / 2 - 60, 425, 120, 90);
+                    Rectangle rectSummoner = new Rectangle(Config.ScreenWidth / 2 + 80, 425, 120, 90);
+
+                    void DrawSelectBox(Rectangle r, string title, string sub, bool selected, Color classColor)
                     {
-                        Raylib.DrawRectangleRec(r, selected ? new Color(60, 150, 255, 20) : new Color(20, 20, 25, 255));
-                        Raylib.DrawRectangleLinesEx(r, 2, selected ? Config.ColorMana : Color.DarkGray);
-                        Raylib.DrawText(title, (int)r.X + 15, (int)r.Y + 30, 15, Color.White);
-                        Raylib.DrawText(sub, (int)r.X + 15, (int)r.Y + 55, 11, Color.Gray);
+                        Raylib.DrawRectangleRec(r, selected ? new Color(classColor.R, classColor.G, classColor.B, (byte)20) : new Color(20, 20, 25, 255));
+                        Raylib.DrawRectangleLinesEx(r, 2, selected ? classColor : Color.DarkGray);
+                        Raylib.DrawText(title, (int)r.X + 8, (int)r.Y + 22, 12, Color.White);
+                        Raylib.DrawText(sub, (int)r.X + 8, (int)r.Y + 48, 9, Color.Gray);
                     }
 
-                    DrawSelectBox(rectSword, "KIẾM GỖ", "Cận chiến", selectedWeaponType == "sword");
-                    DrawSelectBox(rectBow, "CUNG GỖ", "Tầm xa", selectedWeaponType == "bow");
-                    DrawSelectBox(rectWand, "TRƯỢNG GỖ", "Phép thuật", selectedWeaponType == "wand");
+                    DrawSelectBox(rectKnight, "HIỆP SĨ (KNIGHT)", "Cận chiến / Đỡ đòn", selectedClass == "knight", Config.ColorMana);
+                    DrawSelectBox(rectAssassin, "SÁT THỦ (ASSASSIN)", "Ám sát / Cơ động", selectedClass == "assassin", Color.Orange);
+                    DrawSelectBox(rectArcher, "XẠ THỦ (ARCHER)", "Tầm xa / Chí mạng", selectedClass == "archer", Color.Green);
+                    DrawSelectBox(rectMage, "PHÁP SƯ (MAGE)", "Phép thuật / AOE", selectedClass == "mage", Color.Purple);
+                    DrawSelectBox(rectSupport, "HỖ TRỢ (SUPPORT)", "Hồi máu / Cường hóa", selectedClass == "support", Color.SkyBlue);
+                    DrawSelectBox(rectSummoner, "TRIỆU HỒI (SUMMON)", "Gọi thú đồng hành", selectedClass == "summoner", Color.Lime);
 
-                    Rectangle btnStart = new Rectangle(Config.ScreenWidth / 2 - 140, 480, 280, 50);
+                    Rectangle btnStart = new Rectangle(Config.ScreenWidth / 2 - 140, 540, 280, 50);
                     Raylib.DrawRectangleRec(btnStart, Config.ColorMana);
-                    Raylib.DrawText("THÂM NHẬP HẦM NGỤC", Config.ScreenWidth / 2 - 95, 495, 16, Color.White);
+                    Raylib.DrawText("THÂM NHẬP HẦM NGỤC", Config.ScreenWidth / 2 - 95, 555, 16, Color.White);
 
-                    Rectangle btnLoad = new Rectangle(Config.ScreenWidth / 2 - 140, 550, 280, 45);
+                    Rectangle btnLoad = new Rectangle(Config.ScreenWidth / 2 - 140, 610, 280, 45);
                     Raylib.DrawRectangleRec(btnLoad, new Color(40, 40, 48, 255));
-                    Raylib.DrawText("TẢI TIẾN TRÌNH CŨ (LOAD)", Config.ScreenWidth / 2 - 105, 565, 13, Color.LightGray);
+                    Raylib.DrawText("TẢI TIẾN TRÌNH CŨ (LOAD)", Config.ScreenWidth / 2 - 105, 625, 13, Color.LightGray);
                 }
                 else if (gameState == GameState.Playing || gameState == GameState.GameOver)
                 {
@@ -1396,7 +1411,16 @@ namespace CSharpGame
 
                             Raylib.DrawText(tooltipItem.Name, tX + 12, tY + 12, 12, tooltipItem.RarityColor);
                             Raylib.DrawText($"Độ hiếm: {tooltipItem.Rarity}", tX + 12, tY + 30, 9, Color.Gray);
-                            Raylib.DrawText($"Ô: {tooltipItem.SlotType}", tX + 12, tY + 42, 9, Color.Gray);
+                            if (!string.IsNullOrEmpty(tooltipItem.AllowedClass))
+                            {
+                                bool canEquip = tooltipItem.AllowedClass == player.ClassType;
+                                Color reqColor = canEquip ? Color.Green : Color.Red;
+                                Raylib.DrawText($"Yêu cầu: {tooltipItem.AllowedClass.ToUpper()}", tX + 12, tY + 42, 9, reqColor);
+                            }
+                            else
+                            {
+                                Raylib.DrawText($"Ô: {tooltipItem.SlotType}", tX + 12, tY + 42, 9, Color.Gray);
+                            }
 
                             int statRow = 0;
                             void DrawStatLine(string label)
@@ -1535,6 +1559,12 @@ namespace CSharpGame
 
                                 if (Raylib.IsMouseButtonPressed(MouseButton.Left) && Raylib.CheckCollisionPointRec(mouseScrPos, invRecs[k]))
                                 {
+                                    if (!string.IsNullOrEmpty(item.AllowedClass) && item.AllowedClass != player.ClassType)
+                                    {
+                                        floatingTexts.Add(new FloatingText { X = player.X, Y = player.Y - 20, Text = $"Chỉ dành cho {item.AllowedClass.ToUpper()}!", Color = Color.Red, Lifetime = 50, MaxLifetime = 50 });
+                                        break;
+                                    }
+
                                     string equipSlot = item.SlotType;
                                     if (equipSlot == "Ring")
                                     {
@@ -1572,7 +1602,16 @@ namespace CSharpGame
 
                             Raylib.DrawText(hoveredItem.Name, tX + 12, tY + 12, 12, hoveredItem.RarityColor);
                             Raylib.DrawText($"Độ hiếm: {hoveredItem.Rarity}", tX + 12, tY + 30, 9, Color.Gray);
-                            Raylib.DrawText($"Ô: {hoveredItem.SlotType}", tX + 12, tY + 42, 9, Color.Gray);
+                            if (!string.IsNullOrEmpty(hoveredItem.AllowedClass))
+                            {
+                                bool canEquip = hoveredItem.AllowedClass == player.ClassType;
+                                Color reqColor = canEquip ? Color.Green : Color.Red;
+                                Raylib.DrawText($"Yêu cầu: {hoveredItem.AllowedClass.ToUpper()}", tX + 12, tY + 42, 9, reqColor);
+                            }
+                            else
+                            {
+                                Raylib.DrawText($"Ô: {hoveredItem.SlotType}", tX + 12, tY + 42, 9, Color.Gray);
+                            }
 
                             int statRow = 0;
                             void DrawStatLine(string label)

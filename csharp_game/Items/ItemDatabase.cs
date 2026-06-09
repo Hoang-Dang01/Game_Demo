@@ -16,11 +16,11 @@ namespace CSharpGame
 
         private static readonly List<string> EquipmentSlots = new() { "Helmet", "Armor", "Gloves", "Boots", "Ring", "Necklace", "Weapon" };
 
-        public static Item GenerateStartingWeapon(string type)
+        public static Item GenerateStartingWeapon(string classType)
         {
-            ItemData data = type.ToLower() switch
+            ItemData data = classType.ToLower() switch
             {
-                "bow" => new ItemData
+                "archer" => new ItemData
                 {
                     Id = "starter_bow",
                     Name = "Cung Tập Sự",
@@ -29,9 +29,10 @@ namespace CSharpGame
                     BaseDamage = 12,
                     BaseRange = 380,
                     BaseSpeed = 10f,
-                    Rarity = "Common"
+                    Rarity = "Common",
+                    AllowedClass = "archer"
                 },
-                "wand" => new ItemData
+                "mage" => new ItemData
                 {
                     Id = "starter_wand",
                     Name = "Trượng Tập Sự",
@@ -41,7 +42,43 @@ namespace CSharpGame
                     BaseRange = 320,
                     BaseSpeed = 6.5f,
                     BaseSplashRadius = 35,
-                    Rarity = "Common"
+                    Rarity = "Common",
+                    AllowedClass = "mage"
+                },
+                "assassin" => new ItemData
+                {
+                    Id = "starter_dagger",
+                    Name = "Dao Găm Tập Sự",
+                    SlotType = "Weapon",
+                    AttackType = "melee",
+                    BaseDamage = 14,
+                    BaseRange = 55,
+                    Rarity = "Common",
+                    AllowedClass = "assassin"
+                },
+                "support" => new ItemData
+                {
+                    Id = "starter_book",
+                    Name = "Sách Phép Tập Sự",
+                    SlotType = "Weapon",
+                    AttackType = "ranged_magic",
+                    BaseDamage = 10,
+                    BaseRange = 300,
+                    BaseSpeed = 6.0f,
+                    Rarity = "Common",
+                    AllowedClass = "support"
+                },
+                "summoner" => new ItemData
+                {
+                    Id = "starter_orb",
+                    Name = "Ngọc Tập Sự",
+                    SlotType = "Weapon",
+                    AttackType = "ranged_magic",
+                    BaseDamage = 11,
+                    BaseRange = 320,
+                    BaseSpeed = 5.5f,
+                    Rarity = "Common",
+                    AllowedClass = "summoner"
                 },
                 _ => new ItemData
                 {
@@ -51,7 +88,8 @@ namespace CSharpGame
                     AttackType = "melee",
                     BaseDamage = 20,
                     BaseRange = 65,
-                    Rarity = "Common"
+                    Rarity = "Common",
+                    AllowedClass = "knight"
                 }
             };
             return new Item(data);
@@ -108,14 +146,15 @@ namespace CSharpGame
 
             if (slot == "Weapon")
             {
-                // Weapon type: 0 = Sword, 1 = Bow, 2 = Wand
-                int wType = rand.NextInt(0, 2);
+                // Weapon type: 0 = Sword (knight), 1 = Bow (archer), 2 = Wand (mage), 3 = Dagger (assassin), 4 = Holy Book (support), 5 = Summoning Orb (summoner)
+                int wType = rand.NextInt(0, 5);
                 if (wType == 0)
                 {
                     data.Name = "Kiếm Ngắn";
                     data.AttackType = "melee";
                     data.BaseDamage = (int)(18 * floorMult * rarityMult);
                     data.BaseRange = 65;
+                    data.AllowedClass = "knight";
                 }
                 else if (wType == 1)
                 {
@@ -124,8 +163,9 @@ namespace CSharpGame
                     data.BaseDamage = (int)(11 * floorMult * rarityMult);
                     data.BaseRange = 380;
                     data.BaseSpeed = 10f;
+                    data.AllowedClass = "archer";
                 }
-                else
+                else if (wType == 2)
                 {
                     data.Name = "Vương Trượng";
                     data.AttackType = "ranged_magic";
@@ -133,6 +173,33 @@ namespace CSharpGame
                     data.BaseRange = 320;
                     data.BaseSpeed = 6.5f;
                     data.BaseSplashRadius = 40;
+                    data.AllowedClass = "mage";
+                }
+                else if (wType == 3)
+                {
+                    data.Name = "Dao Găm";
+                    data.AttackType = "melee";
+                    data.BaseDamage = (int)(14 * floorMult * rarityMult);
+                    data.BaseRange = 55;
+                    data.AllowedClass = "assassin";
+                }
+                else if (wType == 4)
+                {
+                    data.Name = "Thánh Kinh";
+                    data.AttackType = "ranged_magic";
+                    data.BaseDamage = (int)(10 * floorMult * rarityMult);
+                    data.BaseRange = 300;
+                    data.BaseSpeed = 6.0f;
+                    data.AllowedClass = "support";
+                }
+                else
+                {
+                    data.Name = "Ngọc Linh Hồn";
+                    data.AttackType = "ranged_magic";
+                    data.BaseDamage = (int)(11 * floorMult * rarityMult);
+                    data.BaseRange = 320;
+                    data.BaseSpeed = 5.5f;
+                    data.AllowedClass = "summoner";
                 }
             }
             else if (slot == "Helmet" || slot == "Armor" || slot == "Gloves" || slot == "Boots")

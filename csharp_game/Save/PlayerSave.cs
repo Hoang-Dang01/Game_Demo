@@ -7,6 +7,7 @@ namespace CSharpGame
             data.Level = player.Level;
             data.Xp = player.Xp;
             data.Gold = player.Gold;
+            data.ClassType = player.ClassType;
             data.Vigor = player.Vigor;
             data.Strength = player.Strength;
             data.Dexterity = player.Dexterity;
@@ -29,6 +30,7 @@ namespace CSharpGame
             player.Level = data.Level;
             player.Xp = data.Xp;
             player.Gold = data.Gold;
+            player.ClassType = data.ClassType ?? "knight";
             player.Vigor = data.Vigor;
             player.Strength = data.Strength;
             player.Dexterity = data.Dexterity;
