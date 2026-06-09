@@ -1,0 +1,138 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Source Files\Source">
+      <UniqueIdentifier>{bb625947-2795-4870-ac92-8031d4aae881}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Enemy">
+      <UniqueIdentifier>{2271a7e4-45ad-4b19-b238-3b5d930ac9ae}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Player">
+      <UniqueIdentifier>{e7978f83-d069-40bf-9b69-266fe4ca7bd7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Source\Player">
+      <UniqueIdentifier>{fe7376ef-474a-4bff-ba95-9823a3895202}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Source\Enemy">
+      <UniqueIdentifier>{f641d0fb-b41c-4c9a-9740-14bca9284055}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Map">
+      <UniqueIdentifier>{dea64a59-28cf-4fc6-ba44-76f12fe4066f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Source\Map">
+      <UniqueIdentifier>{997c840b-f3d0-4782-a88d-ca36ff7b4c07}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Source\Game State">
+      <UniqueIdentifier>{da45d1aa-7b4b-4ad1-af0d-93d8374f66d0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Game State">
+      <UniqueIdentifier>{b7d2baa7-788f-4228-8e06-7c13baee5ab9}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="main.cpp">
+      <Filter>Source Files\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Animation.cpp">
+      <Filter>Source Files\Source\Player</Filter>
+    </ClCompile>
+    <ClCompile Include="Player.cpp">
+      <Filter>Source Files\Source\Player</Filter>
+    </ClCompile>
+    <ClCompile Include="BossAnimation.cpp">
+      <Filter>Source Files\Source\Enemy</Filter>
+    </ClCompile>
+    <ClCompile Include="Enemy1.cpp">
+      <Filter>Source Files\Source\Enemy</Filter>
+    </ClCompile>
+    <ClCompile Include="EnemyManager.cpp">
+      <Filter>Source Files\Source\Enemy</Filter>
+    </ClCompile>
+    <ClCompile Include="Enemy2.cpp">
+      <Filter>Source Files\Source\Enemy</Filter>
+    </ClCompile>
+    <ClCompile Include="Enemy3.cpp">
+      <Filter>Source Files\Source\Enemy</Filter>
+    </ClCompile>
+    <ClCompile Include="Map.cpp">
+      <Filter>Source Files\Source\Map</Filter>
+    </ClCompile>
+    <ClCompile Include="MapManager.cpp">
+      <Filter>Source Files\Source\Map</Filter>
+    </ClCompile>
+    <ClCompile Include="MenuScreen.cpp">
+      <Filter>Source Files\Source\Game State</Filter>
+    </ClCompile>
+    <ClCompile Include="WinScreen.cpp">
+      <Filter>Source Files\Source\Game State</Filter>
+    </ClCompile>
+    <ClCompile Include="GameOverScreen.cpp">
+      <Filter>Source Files\Source\Game State</Filter>
+    </ClCompile>
+    <ClCompile Include="PauseMenu.cpp">
+      <Filter>Source Files\Source\Game State</Filter>
+    </ClCompile>
+    <ClCompile Include="ScoreManager.cpp">
+      <Filter>Source Files\Source\Game State</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="BossAnimation.h">
+      <Filter>Header Files\Enemy</Filter>
+    </ClInclude>
+    <ClInclude Include="Enemy1.h">
+      <Filter>Header Files\Enemy</Filter>
+    </ClInclude>
+    <ClInclude Include="Animation.h">
+      <Filter>Header Files\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="Player.h">
+      <Filter>Header Files\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="BaseEnemy.h">
+      <Filter>Header Files\Enemy</Filter>
+    </ClInclude>
+    <ClInclude Include="EnemyManager.h">
+      <Filter>Header Files\Enemy</Filter>
+    </ClInclude>
+    <ClInclude Include="Enemy2.h">
+      <Filter>Header Files\Enemy</Filter>
+    </ClInclude>
+    <ClInclude Include="Enemy3.h">
+      <Filter>Header Files\Enemy</Filter>
+    </ClInclude>
+    <ClInclude Include="Map.h">
+      <Filter>Header Files\Map</Filter>
+    </ClInclude>
+    <ClInclude Include="MapManager.h">
+      <Filter>Header Files\Map</Filter>
+    </ClInclude>
+    <ClInclude Include="MenuScreen.h">
+      <Filter>Header Files\Game State</Filter>
+    </ClInclude>
+    <ClInclude Include="WinScreen.h">
+      <Filter>Header Files\Game State</Filter>
+    </ClInclude>
+    <ClInclude Include="GameOverScreen.h">
+      <Filter>Header Files\Game State</Filter>
+    </ClInclude>
+    <ClInclude Include="PauseMenu.h">
+      <Filter>Header Files\Game State</Filter>
+    </ClInclude>
+    <ClInclude Include="ScoreManager.h">
+      <Filter>Header Files\Game State</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

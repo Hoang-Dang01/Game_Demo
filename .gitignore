@@ -1,0 +1,28 @@
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Zip files / Large archives
+*.zip
+*.rar
+*.tar.gz
+
+# C# / Visual Studio
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+bld/
+[Bb]in/
+[Oo]bj/
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# OS
+.DS_Store
+Thumbs.db

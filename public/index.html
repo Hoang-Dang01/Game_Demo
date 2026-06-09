@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SAO: Hầm Ngục Trực Tuyến (Co-op RPG)</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- 1. MÀN HÌNH CHỜ (LOBBY SCREEN) -->
+    <div id="lobbyScreen" class="overlay-screen">
+        <div class="lobby-container">
+            <h1 class="glow-title">DUNGEON RPG ONLINE</h1>
+            <p class="subtitle">Sword Art Online 2D Co-op Edition</p>
+            
+            <div class="form-group">
+                <label for="nickname">Biệt danh của bạn</label>
+                <input type="text" id="nickname" maxlength="12" placeholder="Nhập biệt danh..." value="Kirisaki">
+            </div>
+
+            <div class="form-group">
+                <label for="roomId">Số Phòng (Party Room)</label>
+                <input type="text" id="roomId" maxlength="10" placeholder="dungeon_1" value="dungeon_1">
+            </div>
+
+            <div class="class-selector">
+                <label>Chọn Class Nhân Vật</label>
+                <div class="class-cards">
+                    <div class="class-card selected" data-class="knight">
+                        <div class="class-avatar knight-color"></div>
+                        <h3>Hiệp Sĩ (Knight)</h3>
+                        <p class="desc">HP: 150 | Sức mạnh & Thể chất cao</p>
+                        <p class="weapon-info">Cận chiến (Kiếm, Khiên, Giáp nặng)</p>
+                    </div>
+
+                    <div class="class-card" data-class="assassin">
+                        <div class="class-avatar assassin-color"></div>
+                        <h3>Sát Thủ (Assassin)</h3>
+                        <p class="desc">HP: 100 | Chí mạng cao & Cơ động</p>
+                        <p class="weapon-info">Ám sát (Dao găm, Phi tiêu, Kiếm ngắn)</p>
+                    </div>
+
+                    <div class="class-card" data-class="archer">
+                        <div class="class-avatar archer-color"></div>
+                        <h3>Cung Thủ (Archer)</h3>
+                        <p class="desc">HP: 100 | Sát thương tầm xa & AOE</p>
+                        <p class="weapon-info">DPS tầm xa (Cung, Nỏ)</p>
+                    </div>
+
+                    <div class="class-card" data-class="mage">
+                        <div class="class-avatar mage-color"></div>
+                        <h3>Pháp Sư (Mage)</h3>
+                        <p class="desc">HP: 80 | Phép thuật diện rộng & Khống chế</p>
+                        <p class="weapon-info">AOE Phép (Trượng phép, Sách phép)</p>
+                    </div>
+
+                    <div class="class-card" data-class="support">
+                        <div class="class-avatar support-color"></div>
+                        <h3>Hỗ Trợ (Support)</h3>
+                        <p class="desc">HP: 120 | Hồi máu & Cường hóa đồng đội</p>
+                        <p class="weapon-info">Healer & Buff (Thánh thư, Trượng hỗ trợ)</p>
+                    </div>
+
+                    <div class="class-card" data-class="summoner">
+                        <div class="class-avatar summoner-color"></div>
+                        <h3>Triệu Hồi Sư (Summoner)</h3>
+                        <p class="desc">HP: 110 | Điều khiển linh thú phụ trợ</p>
+                        <p class="weapon-info">Triệu hồi (Ngọc, Trượng triệu hồi)</p>
+                    </div>
+                </div>
+            </div>
+
+            <button id="btnConnect" class="btn-primary">THÂM NHẬP HẦM NGỤC</button>
+        </div>
+    </div>
+
+    <!-- 2. KHUNG CHƠI GAME (GAME CONTAINER) -->
+    <div id="gameContainer" class="hidden">
+        <canvas id="gameCanvas" width="1024" height="768"></canvas>
+        
+        <!-- HUD CHỈ SỐ PLAYER (TOP-LEFT) -->
+        <div id="playerHUD" class="hud-panel">
+            <div class="hud-row">
+                <span id="hudName" class="player-name">Player</span>
+                <span id="hudLevel" class="player-level">LV.1</span>
+            </div>
+            
+            <!-- HP Bar -->
+            <div class="bar-container">
+                <div class="bar-tag">HP</div>
+                <div class="bar-fill-bg hp-bg">
+                    <div id="hpFill" class="bar-fill hp-fill" style="width: 100%;"></div>
+                    <span id="hpText" class="bar-text">100/100</span>
+                </div>
+            </div>
+
+            <!-- MP Bar -->
+            <div class="bar-container">
+                <div class="bar-tag">MP</div>
+                <div class="bar-fill-bg mp-bg">
+                    <div id="mpFill" class="bar-fill mp-fill" style="width: 100%;"></div>
+                    <span id="mpText" class="bar-text">100/100</span>
+                </div>
+            </div>
+
+            <!-- EXP Bar -->
+            <div class="bar-container">
+                <div class="bar-tag">XP</div>
+                <div class="bar-fill-bg xp-bg">
+                    <div id="xpFill" class="bar-fill xp-fill" style="width: 0%;"></div>
+                    <span id="xpText" class="bar-text">0/100</span>
+                </div>
+            </div>
+
+            <div class="hud-footer">
+                <div class="gold-box">
+                    <span class="gold-icon">●</span>
+                    <span id="goldCount">0</span> Vàng
+                </div>
+                <div id="weaponName" class="weapon-tag">Kiếm Rỉ Sét</div>
+            </div>
+        </div>
+
+        <!-- BẢNG CHỈ SỐ NHÂN VẬT (STATS PANEL - TOGGLE WITH 'C') -->
+        <div id="statsPanel" class="hud-panel stats-panel hidden">
+            <h3 class="stats-title">BẢNG CHỈ SỐ (C)</h3>
+            <div class="stat-point-available">
+                Điểm chưa cộng: <span id="statPointsCount" class="color-gold">0</span>
+            </div>
+            <div class="stat-rows">
+                <div class="stat-row">
+                    <div class="stat-info">
+                        <span class="stat-name">Vigor (Sức sống)</span>
+                        <span id="statVigorVal" class="stat-value">10</span>
+                    </div>
+                    <button class="btn-stat-plus" data-stat="vigor">+</button>
+                </div>
+                <div class="stat-row">
+                    <div class="stat-info">
+                        <span class="stat-name">Strength (Sức mạnh)</span>
+                        <span id="statStrengthVal" class="stat-value">10</span>
+                    </div>
+                    <button class="btn-stat-plus" data-stat="strength">+</button>
+                </div>
+                <div class="stat-row">
+                    <div class="stat-info">
+                        <span class="stat-name">Dexterity (Khéo léo)</span>
+                        <span id="statDexterityVal" class="stat-value">10</span>
+                    </div>
+                    <button class="btn-stat-plus" data-stat="dexterity">+</button>
+                </div>
+                <div class="stat-row">
+                    <div class="stat-info">
+                        <span class="stat-name">Intelligence (Trí tuệ)</span>
+                        <span id="statIntelligenceVal" class="stat-value">10</span>
+                    </div>
+                    <button class="btn-stat-plus" data-stat="intelligence">+</button>
+                </div>
+                <div class="stat-row">
+                    <div class="stat-info">
+                        <span class="stat-name">Vitality (Thể chất)</span>
+                        <span id="statVitalityVal" class="stat-value">10</span>
+                    </div>
+                    <button class="btn-stat-plus" data-stat="vitality">+</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- DANH SÁCH TỔ ĐỘI / PARTY (TOP-RIGHT) -->
+        <div id="partyHUD" class="hud-panel">
+            <h4 class="party-title">ĐỒNG ĐỘI (PARTY)</h4>
+            <div id="partyList">
+                <p class="empty-msg">Không có ai trong phòng...</p>
+            </div>
+        </div>
+
+        <!-- BĂNG BANNER TẦNG HẦM (CENTER FLOATING) -->
+        <div id="floorBanner" class="floor-banner hidden">
+            <h1 id="floorText">FLOOR 1</h1>
+            <p id="floorSubText">KHU RỪNG U TỐI</p>
+        </div>
+
+        <!-- CHỈ DẪN KỸ NĂNG & ĐIỀU KHIỂN (BOTTOM-LEFT) -->
+        <div id="controlsHUD" class="hud-panel font-small">
+            <p>Di chuyển: <strong>W A S D / Phím Mũi Tên</strong></p>
+            <p>Tấn công : <strong>Chuột Trái / Chuột Phải</strong></p>
+            <p>Lướt né  : <strong>Space (Dấu Cách)</strong></p>
+            <p>Tương tác: <strong>Phím [E] (Mở Rương)</strong></p>
+            <p id="interactPrompt" class="interact-prompt hidden">Nhấn [E] để mở rương báu!</p>
+        </div>
+
+        <!-- THANH MÁU BOSS KHỔNG LỒ (BOTTOM CENTER) -->
+        <div id="bossHUD" class="boss-panel hidden">
+            <div id="bossName" class="boss-name">!!! CHÚA TỂ XƯƠNG (BOSS) !!!</div>
+            <div class="boss-hp-bg">
+                <div id="bossHpFill" class="boss-hp-fill" style="width: 100%;"></div>
+                <span id="bossHpText" class="boss-hp-text">500/500</span>
+            </div>
+        </div>
+
+        <!-- MÀN HÌNH GAME OVER -->
+        <div id="gameOverScreen" class="overlay-screen hidden">
+            <div class="lobby-container death-container">
+                <h1 class="death-title">BẠN ĐÃ TỬ TRẬN</h1>
+                <p class="death-sub text-gray">Vũ khí của bạn đã rơi rụng và linh hồn kẹt lại hầm ngục.</p>
+                <div class="stats-summary">
+                    <p>Tầng sâu đạt được: <strong id="statFloor">1</strong></p>
+                    <p>Vàng gom được: <strong id="statGold" class="color-gold">0</strong></p>
+                </div>
+                <button id="btnRespawn" class="btn-primary btn-death">HỒI SINH TẠI THỊ TRẤN</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Nhập thư viện dungeon generator & weapon system dùng chung -->
+    <script src="/shared/dungeon_generator.js"></script>
+    <script src="/shared/weapon_system.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>

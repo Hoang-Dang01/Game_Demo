@@ -1,0 +1,25 @@
+# Visual Studio / .vs
+**/.vs/
+*.user
+*.suo
+*.vcxproj.user
+*.userprefs
+
+# Build results
+bin/
+obj/
+*.exe
+*.dll
+*.pdb
+
+# Unity specific
+Library/
+Temp/
+Logs/
+MemoryCaptures/
+Build/
+Builds/
+
+# OS generated
+.DS_Store
+Thumbs.db
