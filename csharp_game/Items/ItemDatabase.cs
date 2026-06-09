@@ -180,5 +180,19 @@ namespace CSharpGame
 
             return item;
         }
+
+        public static Item GeneratePortalStone()
+        {
+            return new Item(new ItemData
+            {
+                Id = "portal_stone",
+                Name = "Đá Dịch Chuyển",
+                ItemType = "portal_stone",
+                SlotType = "Consumable",
+                Rarity = "Rare",
+                BaseDamage = 0,
+                BaseDefense = 0f
+            });
+        }
     }
 }

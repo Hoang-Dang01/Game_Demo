@@ -208,6 +208,16 @@ namespace CSharpGame
                 dropEq.Radius = 10f;
                 droppedItems.Add(dropEq);
 
+                // 3. Drop Portal Stone (25% chance)
+                if (r.NextFloat() < 0.25f)
+                {
+                    Item portalStone = ItemDatabase.GeneratePortalStone();
+                    portalStone.X = chest.Pos.X;
+                    portalStone.Y = chest.Pos.Y - 16;
+                    portalStone.Radius = 8f;
+                    droppedItems.Add(portalStone);
+                }
+
                 shakeIntensity = Math.Max(shakeIntensity, 6f);
             }
 
@@ -257,6 +267,12 @@ namespace CSharpGame
                             // Generate starting weapon
                             Item startingWeapon = ItemDatabase.GenerateStartingWeapon(selectedWeaponType);
                             player.Equipment.Equip(startingWeapon, "Weapon");
+
+                            // Start with 3 Portal Stones
+                            player.Inventory.AddItem(ItemDatabase.GeneratePortalStone());
+                            player.Inventory.AddItem(ItemDatabase.GeneratePortalStone());
+                            player.Inventory.AddItem(ItemDatabase.GeneratePortalStone());
+
                             player.RecalculateAttributes();
                             player.Hp = player.MaxHp;
                             player.Mp = player.MaxMp;
@@ -288,7 +304,8 @@ namespace CSharpGame
                         }
                     }
 
-                    // 1b. Sanctuary fast regen (every frame)
+                    // 1b. Sanctuary fast regen (every frame) and sync portal stone count
+                    sanctuary.PortalStoneCount = player.Inventory.PortalStoneCount;
                     if (sanctuary.IsActive)
                         sanctuary.Update(player);
 
@@ -307,7 +324,7 @@ namespace CSharpGame
                         showStorageUI = false;
                     }
 
-                    // [T] — Portal: Dungeon → Sanctuary (Free in v1)
+                    // [T] — Portal: Dungeon → Sanctuary (Consumes Portal Stone)
                     if (Raylib.IsKeyPressed(KeyboardKey.T) && !sanctuary.IsActive && player.Hp > 0)
                     {
                         if (portal.PortalToSanctuary(player, sanctuary, currentLevel, dungeonSeed))
@@ -321,6 +338,16 @@ namespace CSharpGame
                             });
                             InitSanctuary();
                             SaveManager.SaveGame(player, 0, highestFloorReached, sanctuary, portal.ReturnPortal);
+                        }
+                        else
+                        {
+                            floatingTexts.Add(new FloatingText
+                            {
+                                X = player.X, Y = player.Y - 30,
+                                Text = "Không có Đá Dịch Chuyển!",
+                                Color = Color.Red,
+                                Lifetime = 50, MaxLifetime = 50
+                            });
                         }
                     }
 
@@ -663,6 +690,13 @@ namespace CSharpGame
                                 bossEq.Y = enemy.Y + 16;
                                 bossEq.Radius = 10f;
                                 droppedItems.Add(bossEq);
+
+                                // Drop Portal Stone from Boss (100% chance)
+                                Item portalStone = ItemDatabase.GeneratePortalStone();
+                                portalStone.X = enemy.X - 16;
+                                portalStone.Y = enemy.Y;
+                                portalStone.Radius = 8f;
+                                droppedItems.Add(portalStone);
 
                                 if (currentLevel + 1 > highestFloorReached) highestFloorReached = currentLevel + 1;
                                 SaveManager.SaveGame(player, currentLevel + 1, highestFloorReached,
@@ -1231,38 +1265,157 @@ namespace CSharpGame
                     // ── Storage Chest UI ─────────────────────────────────────────
                     if (showStorageUI)
                     {
-                        int spX = Config.ScreenWidth / 2 - 280;
-                        int spY = Config.ScreenHeight / 2 - 180;
-                        Raylib.DrawRectangle(spX, spY, 560, 360, new Color(4, 16, 8, 245));
-                        Raylib.DrawRectangleLines(spX, spY, 560, 360, new Color(80, 200, 120, 255));
-                        Raylib.DrawText("■  KHO ĐỒ SANCTUARY", spX + 20, spY + 15, 16, new Color(80, 200, 120, 255));
-                        Raylib.DrawLine(spX, spY + 38, spX + 560, spY + 38, new Color(80, 200, 120, 100));
+                        int spWidth = 760;
+                        int spHeight = 380;
+                        int spX = Config.ScreenWidth / 2 - spWidth / 2;
+                        int spY = Config.ScreenHeight / 2 - spHeight / 2;
 
-                        Raylib.DrawText($"Đồ lưu kho: {sanctuary.StorageItems.Count} vật phẩm",
-                            spX + 20, spY + 55, 12, Color.LightGray);
+                        // Draw background panel (glassmorphism look with green tint)
+                        Raylib.DrawRectangle(spX, spY, spWidth, spHeight, new Color(10, 24, 15, 240));
+                        Raylib.DrawRectangleLines(spX, spY, spWidth, spHeight, new Color(80, 200, 120, 255));
+                        Raylib.DrawText("■  KHO CHỨA ĐỒ SANCTUARY", spX + 20, spY + 15, 16, new Color(80, 200, 120, 255));
+                        Raylib.DrawLine(spX, spY + 38, spX + spWidth, spY + 38, new Color(80, 200, 120, 100));
 
-                        if (sanctuary.StorageItems.Count == 0)
+                        // Left Side: Storage Items
+                        int storageLimit = 20;
+                        Raylib.DrawText($"Kho chứa đồ: {sanctuary.StorageItems.Count}/{storageLimit} vật phẩm", spX + 20, spY + 50, 12, Color.LightGray);
+
+                        Vector2 mouseScrPos = Raylib.GetMousePosition();
+                        Item? hoveredStorageItem = null;
+                        int hoveredStorageIdx = -1;
+
+                        for (int k = 0; k < storageLimit; k++)
                         {
-                            Raylib.DrawText("— Kho trống —", spX + 200, spY + 160, 13, Color.DarkGray);
-                        }
-                        else
-                        {
-                            for (int si = 0; si < Math.Min(sanctuary.StorageItems.Count, 16); si++)
+                            int col = k % 4;
+                            int row = k / 4;
+                            int sx = spX + 20 + col * 85;
+                            int sy = spY + 80 + row * 55;
+
+                            Rectangle slotRec = new Rectangle(sx, sy, 78, 48);
+                            Raylib.DrawRectangleRec(slotRec, new Color(20, 20, 25, 255));
+                            Raylib.DrawRectangleLinesEx(slotRec, 1, Color.DarkGray);
+
+                            if (k < sanctuary.StorageItems.Count)
                             {
-                                int col = si % 4;
-                                int row = si / 4;
-                                int ix = spX + 20 + col * 130;
-                                int iy = spY + 90 + row * 60;
-                                var sItem = sanctuary.StorageItems[si];
-                                Raylib.DrawRectangle(ix, iy, 120, 50, new Color(10, 20, 12, 220));
-                                Raylib.DrawRectangleLines(ix, iy, 120, 50, sItem.RarityColor);
-                                string sName = sItem.Name.Length > 14 ? sItem.Name.Substring(0, 12) + ".." : sItem.Name;
-                                Raylib.DrawText(sName, ix + 5, iy + 8, 9, sItem.RarityColor);
-                                Raylib.DrawText(sItem.Rarity, ix + 5, iy + 32, 8, Color.DarkGray);
+                                Item item = sanctuary.StorageItems[k];
+                                Raylib.DrawRectangleLinesEx(slotRec, 1.5f, item.RarityColor);
+
+                                string shortName = item.Name.Length > 12 ? item.Name.Substring(0, 10) + ".." : item.Name;
+                                Raylib.DrawText(shortName, sx + 6, sy + 18, 9, item.RarityColor);
+
+                                if (Raylib.CheckCollisionPointRec(mouseScrPos, slotRec))
+                                {
+                                    hoveredStorageItem = item;
+                                    hoveredStorageIdx = k;
+                                    Raylib.DrawRectangleLinesEx(slotRec, 2f, Color.White);
+                                }
                             }
                         }
 
-                        Raylib.DrawText("[ESC] Đóng", spX + 460, spY + 330, 10, Color.Gray);
+                        // Right Side: Player Inventory
+                        Raylib.DrawText($"Hành trang người chơi: {player.Inventory.Items.Count}/{Inventory.MaxSlots} vật phẩm", spX + 400, spY + 50, 12, Color.LightGray);
+
+                        Item? hoveredPlayerItem = null;
+                        int hoveredPlayerIdx = -1;
+
+                        for (int k = 0; k < Inventory.MaxSlots; k++)
+                        {
+                            int col = k % 4;
+                            int row = k / 4;
+                            int sx = spX + 400 + col * 85;
+                            int sy = spY + 80 + row * 55;
+
+                            Rectangle slotRec = new Rectangle(sx, sy, 78, 48);
+                            Raylib.DrawRectangleRec(slotRec, new Color(20, 20, 25, 255));
+                            Raylib.DrawRectangleLinesEx(slotRec, 1, Color.DarkGray);
+
+                            if (k < player.Inventory.Items.Count)
+                            {
+                                Item item = player.Inventory.Items[k];
+                                Raylib.DrawRectangleLinesEx(slotRec, 1.5f, item.RarityColor);
+
+                                string shortName = item.Name.Length > 12 ? item.Name.Substring(0, 10) + ".." : item.Name;
+                                Raylib.DrawText(shortName, sx + 6, sy + 18, 9, item.RarityColor);
+
+                                if (Raylib.CheckCollisionPointRec(mouseScrPos, slotRec))
+                                {
+                                    hoveredPlayerItem = item;
+                                    hoveredPlayerIdx = k;
+                                    Raylib.DrawRectangleLinesEx(slotRec, 2f, Color.White);
+                                }
+                            }
+                        }
+
+                        // Click actions:
+                        if (Raylib.IsMouseButtonPressed(MouseButton.Left))
+                        {
+                            if (hoveredStorageIdx >= 0 && hoveredStorageItem != null)
+                            {
+                                // Withdraw item
+                                if (player.Inventory.AddItem(hoveredStorageItem))
+                                {
+                                    sanctuary.StorageItems.RemoveAt(hoveredStorageIdx);
+                                    floatingTexts.Add(new FloatingText { X = player.X, Y = player.Y - 25, Text = $"Rút: {hoveredStorageItem.Name}", Color = hoveredStorageItem.RarityColor, Lifetime = 40, MaxLifetime = 40 });
+                                }
+                                else
+                                {
+                                    floatingTexts.Add(new FloatingText { X = player.X, Y = player.Y - 25, Text = "Hành trang đầy!", Color = Color.Red, Lifetime = 40, MaxLifetime = 40 });
+                                }
+                            }
+                            else if (hoveredPlayerIdx >= 0 && hoveredPlayerItem != null)
+                            {
+                                // Deposit item
+                                if (sanctuary.StorageItems.Count < storageLimit)
+                                {
+                                    sanctuary.StorageItems.Add(hoveredPlayerItem);
+                                    player.Inventory.RemoveItem(hoveredPlayerItem);
+                                    floatingTexts.Add(new FloatingText { X = player.X, Y = player.Y - 25, Text = $"Cất: {hoveredPlayerItem.Name}", Color = hoveredPlayerItem.RarityColor, Lifetime = 40, MaxLifetime = 40 });
+                                }
+                                else
+                                {
+                                    floatingTexts.Add(new FloatingText { X = player.X, Y = player.Y - 25, Text = "Kho đồ đầy!", Color = Color.Red, Lifetime = 40, MaxLifetime = 40 });
+                                }
+                            }
+                        }
+
+                        // Tooltip rendering for hovered items
+                        Item? tooltipItem = hoveredStorageItem ?? hoveredPlayerItem;
+                        if (tooltipItem != null)
+                        {
+                            int tX = (int)mouseScrPos.X + 15;
+                            int tY = (int)mouseScrPos.Y + 15;
+
+                            int tooltipW = 200;
+                            int tooltipH = 140;
+
+                            if (tX + tooltipW > Config.ScreenWidth) tX = (int)mouseScrPos.X - tooltipW - 15;
+                            if (tY + tooltipH > Config.ScreenHeight) tY = (int)mouseScrPos.Y - tooltipH - 15;
+
+                            Raylib.DrawRectangle(tX, tY, tooltipW, tooltipH, new Color(10, 10, 15, 255));
+                            Raylib.DrawRectangleLines(tX, tY, tooltipW, tooltipH, tooltipItem.RarityColor);
+
+                            Raylib.DrawText(tooltipItem.Name, tX + 12, tY + 12, 12, tooltipItem.RarityColor);
+                            Raylib.DrawText($"Độ hiếm: {tooltipItem.Rarity}", tX + 12, tY + 30, 9, Color.Gray);
+                            Raylib.DrawText($"Ô: {tooltipItem.SlotType}", tX + 12, tY + 42, 9, Color.Gray);
+
+                            int statRow = 0;
+                            void DrawStatLine(string label)
+                            {
+                                Raylib.DrawText(label, tX + 12, tY + 60 + statRow * 12, 9, Color.LightGray);
+                                statRow++;
+                            }
+
+                            if (tooltipItem.Damage > 0) DrawStatLine($"+{tooltipItem.Damage} Sát thương");
+                            if (tooltipItem.Defense > 0) DrawStatLine($"+{tooltipItem.Defense} Phòng thủ");
+                            if (tooltipItem.CritChance > 0.001f) DrawStatLine($"+{(int)(tooltipItem.CritChance * 100)}% Chí mạng");
+                            if (tooltipItem.VigorBonus > 0) DrawStatLine($"+{tooltipItem.VigorBonus} Sức sống");
+                            if (tooltipItem.StrengthBonus > 0) DrawStatLine($"+{tooltipItem.StrengthBonus} Sức mạnh");
+                            if (tooltipItem.DexterityBonus > 0) DrawStatLine($"+{tooltipItem.DexterityBonus} Khéo léo");
+                            if (tooltipItem.IntelligenceBonus > 0) DrawStatLine($"+{tooltipItem.IntelligenceBonus} Trí tuệ");
+                            if (tooltipItem.VitalityBonus > 0) DrawStatLine($"+{tooltipItem.VitalityBonus} Thể chất");
+                        }
+
+                        Raylib.DrawText("[ESC] Đóng", spX + spWidth - 90, spY + spHeight - 25, 10, Color.Gray);
                     }
 
                     if (showCharacterScreen)

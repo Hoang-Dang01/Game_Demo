@@ -14,12 +14,16 @@ namespace CSharpGame
 
         // ── Dungeon → Sanctuary ───────────────────────────────────────────
         /// <summary>
-        /// Attempt to portal to Sanctuary. Free in v1.
+        /// Attempt to portal to Sanctuary. Consumes 1 Portal Stone from inventory.
         /// </summary>
         public bool PortalToSanctuary(Player player, SanctuaryManager sanctuary,
                                       int currentFloor, uint currentSeed)
         {
-            // Free portal - no stone required in v1 for testing gameplay loop
+            // Try to consume portal stone
+            if (!player.Inventory.ConsumePortalStone())
+            {
+                return false;
+            }
             
             // Save return coordinates
             ReturnPortal.Set(currentFloor, currentSeed, player.X, player.Y);
