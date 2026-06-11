@@ -193,8 +193,57 @@
         return result;
     }
 
+    function generateSanctuary(width = 25, height = 25) {
+        const grid = Array(height).fill(null).map(() => Array(width).fill(0));
+        const tileSize = 48;
+
+        // Carve a single large room that fills most of the map
+        const margin = 3;
+        for (let y = margin; y < height - margin; y++) {
+            for (let x = margin; x < width - margin; x++) {
+                grid[y][x] = 3; // safe floor
+            }
+        }
+
+        const cx = Math.floor(width / 2);
+        const cy = Math.floor(height / 2);
+
+        const result = {
+            width: width,
+            height: height,
+            grid: grid,
+            playerSpawn: {
+                x: cx * tileSize + tileSize / 2,
+                y: (cy + 4) * tileSize + tileSize / 2
+            },
+            merchantSpawn: {
+                x: (cx - 5) * tileSize + tileSize / 2,
+                y: cy * tileSize + tileSize / 2
+            },
+            shopPedestals: [
+                { x: (cx + 5) * tileSize + tileSize / 2, y: cy * tileSize + tileSize / 2 }, // Storage chest
+                { x: cx * tileSize + tileSize / 2, y: (cy - 4) * tileSize + tileSize / 2 }  // Portal
+            ],
+            stairsSpawn: {
+                x: cx * tileSize + tileSize / 2,
+                y: (cy + 4) * tileSize + tileSize / 2
+            },
+            bossSpawn: null,
+            chests: [],
+            enemies: [],
+            lanterns: [
+                { x: (cx - 5) * tileSize + tileSize / 2, y: cy * tileSize + tileSize / 2 },
+                { x: (cx + 5) * tileSize + tileSize / 2, y: cy * tileSize + tileSize / 2 },
+                { x: cx * tileSize + tileSize / 2, y: (cy - 4) * tileSize + tileSize / 2 }
+            ]
+        };
+
+        return result;
+    }
+
     // Export generator function and randomizer
     exports.SeededRandom = SeededRandom;
     exports.generateDungeon = generateDungeon;
+    exports.generateSanctuary = generateSanctuary;
 
 })(typeof exports === 'undefined' ? this.DungeonGenerator = {} : exports);

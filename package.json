@@ -1,7 +1,7 @@
 {
-  "name": "orb-survivor-sao",
+  "name": "core-of-ruin",
   "version": "1.0.0",
-  "description": "SAO 2D Cooperative Dungeon Crawler Web Game",
+  "description": "Core of Ruin: Co-op Action RPG & Crafting Crawler Web Game",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"

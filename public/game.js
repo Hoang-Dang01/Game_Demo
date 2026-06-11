@@ -49,8 +49,22 @@ const classCards = document.querySelectorAll(".class-card");
 const gameOverScreen = document.getElementById("gameOverScreen");
 const btnRespawn = document.getElementById("btnRespawn");
 const statsPanel = document.getElementById("statsPanel");
+const blacksmithPanel = document.getElementById("blacksmithPanel");
+const storagePanel = document.getElementById("storagePanel");
+const btnExitBlacksmith = document.getElementById("btnExitBlacksmith");
+const btnExitStorage = document.getElementById("btnExitStorage");
+const tabCraft = document.getElementById("tabCraft");
+const tabUpgrade = document.getElementById("tabUpgrade");
+const craftTabContent = document.getElementById("craftTabContent");
+const upgradeTabContent = document.getElementById("upgradeTabContent");
+const btnUpgradeWeapon = document.getElementById("btnUpgradeWeapon");
+const storageGrid = document.getElementById("storageGrid");
+const equipWeaponSlot = document.getElementById("equipWeaponSlot");
 
 let selectedClass = "knight";
+let blacksmithUIOpen = false;
+let storageUIOpen = false;
+let blacksmithActiveTab = 0; // 0 = Craft, 1 = Upgrade
 
 // Class select card listeners
 classCards.forEach(card => {
@@ -81,8 +95,41 @@ plusButtons.forEach(btn => {
     });
 });
 
+// Close buttons
+btnExitBlacksmith.addEventListener("click", () => {
+    blacksmithPanel.classList.add("hidden");
+    blacksmithUIOpen = false;
+});
+btnExitStorage.addEventListener("click", () => {
+    storagePanel.classList.add("hidden");
+    storageUIOpen = false;
+});
+
+// Blacksmith tabs switching
+tabCraft.addEventListener("click", () => {
+    blacksmithActiveTab = 0;
+    tabCraft.classList.add("active");
+    tabUpgrade.classList.remove("active");
+    craftTabContent.classList.remove("hidden");
+    upgradeTabContent.classList.add("hidden");
+});
+tabUpgrade.addEventListener("click", () => {
+    blacksmithActiveTab = 1;
+    tabUpgrade.classList.add("active");
+    tabCraft.classList.remove("active");
+    upgradeTabContent.classList.remove("hidden");
+    craftTabContent.classList.add("hidden");
+});
+
+// Blacksmith Upgrade action
+btnUpgradeWeapon.addEventListener("click", () => {
+    if (socket && socket.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify({ type: "upgrade_weapon" }));
+    }
+});
+
 function startConnection() {
-    const nick = nicknameInput.value.trim() || "Kirisaki";
+    const nick = nicknameInput.value.trim() || "Explorer";
     const room = roomIdInput.value.trim() || "dungeon_1";
     
     lobbyScreen.classList.add("hidden");
@@ -151,7 +198,7 @@ function startConnection() {
 
 // BỘ PHÁT SINH PHÒNG & THIẾT KẾ GẠCH ĐÁ PIXEL ĐỒNG BỘ
 function buildLocalDungeon(seed, level) {
-    localMapData = DungeonGenerator.generateDungeon(seed, level);
+    localMapData = level === 0 ? DungeonGenerator.generateSanctuary() : DungeonGenerator.generateDungeon(seed, level);
     
     // Khởi tạo Canvas ẩn để cache bản đồ gạch đá pixel
     dungeonCanvas = document.createElement("canvas");
@@ -171,12 +218,43 @@ function buildLocalDungeon(seed, level) {
             if (tile === 0) {
                 // Vẽ tường đá pixel
                 drawWallPixel(dungeonCanvasCtx, rx, ry, rand);
+            } else if (tile === 3) {
+                // Vẽ sàn gỗ Sanctuary pixel
+                drawSafeFloorPixel(dungeonCanvasCtx, rx, ry, y, rand);
             } else {
                 // Vẽ sàn gạch pixel
                 drawFloorPixel(dungeonCanvasCtx, rx, ry, rand);
             }
         }
     }
+}
+
+// Vẽ sàn gỗ Sanctuary pixel
+function drawSafeFloorPixel(ctx, x, y, gy, rand) {
+    const baseColor = "#4b3527";
+    const border = "#302016";
+    const grain = "#5a4434";
+    
+    ctx.fillStyle = baseColor;
+    ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
+    
+    // Đường ván ngang
+    ctx.fillStyle = border;
+    ctx.fillRect(x, y, TILE_SIZE, 2);
+    ctx.fillRect(x, y + TILE_SIZE - 2, TILE_SIZE, 2);
+    
+    // Mạch gỗ dọc so le
+    if (gy % 2 === 0) {
+        ctx.fillRect(x + TILE_SIZE / 2 - 1, y, 2, TILE_SIZE);
+    } else {
+        ctx.fillRect(x + TILE_SIZE / 4 - 1, y, 2, TILE_SIZE);
+        ctx.fillRect(x + 3 * TILE_SIZE / 4 - 1, y, 2, TILE_SIZE);
+    }
+    
+    // Vân gỗ mờ
+    ctx.fillStyle = grain;
+    ctx.fillRect(x + 4, y + 12, TILE_SIZE - 8, 1);
+    ctx.fillRect(x + 6, y + 24, TILE_SIZE - 12, 1);
 }
 
 // Vẽ gạch tường đá pixel nứt nẻ
@@ -251,11 +329,16 @@ function showFloorBanner(level) {
     const floorSubText = document.getElementById("floorSubText");
     
     let sub = "Kẻ Thách Thức Hầm Ngục";
-    if (level === 5) sub = "LÃNH ĐỊA BOSS RỒNG XƯƠNG";
-    else if (level > 5 && level < 10) sub = "MỎ ĐÁ BỎ HOANG";
-    else if (level === 10) sub = "HẦM BĂNG VĨNH CỬU";
+    if (level === 0) {
+        floorText.innerText = "SANCTUARY";
+        sub = "VÙNG AN TOÀN DUY NHẤT";
+    } else {
+        floorText.innerText = `FLOOR ${level}`;
+        if (level === 5) sub = "LÃNH ĐỊA BOSS RỒNG XƯƠNG";
+        else if (level > 5 && level < 10) sub = "MỎ ĐÁ BỎ HOANG";
+        else if (level === 10) sub = "HẦM BĂNG VĨNH CỬU";
+    }
     
-    floorText.innerText = `FLOOR ${level}`;
     floorSubText.innerText = sub;
     
     banner.classList.remove("hidden");
@@ -391,6 +474,24 @@ function updateHUD(p) {
     document.getElementById("hudLevel").innerText = "LV." + p.level;
     document.getElementById("goldCount").innerText = p.gold;
     
+    // Cập nhật tầng hiện tại và đá dịch chuyển
+    const floorHUD = document.getElementById("hudFloor");
+    if (currentLevel === 0) {
+        floorHUD.innerText = "SANCTUARY";
+        floorHUD.className = "color-gold";
+    } else {
+        floorHUD.innerText = "TẦNG " + currentLevel;
+        floorHUD.className = "";
+    }
+    
+    const portalHUD = document.getElementById("hudPortalStones");
+    portalHUD.innerText = `[T] Portal (${p.portalStoneCount || 0})`;
+    if ((p.portalStoneCount || 0) > 0 && currentLevel !== 0) {
+        portalHUD.classList.remove("disabled");
+    } else {
+        portalHUD.classList.add("disabled");
+    }
+
     // Thanh HP
     const hpPct = (p.hp / p.maxHp) * 100;
     document.getElementById("hpFill").style.width = hpPct + "%";
@@ -433,6 +534,85 @@ function updateHUD(p) {
                 btn.classList.add("disabled");
             }
         });
+    }
+
+    // Cập nhật thông số bảng Thợ rèn
+    if (blacksmithUIOpen) {
+        document.getElementById("upgWeaponName").innerText = p.weapon.name;
+        document.getElementById("upgWeaponName").style.color = p.weapon.color;
+        document.getElementById("upgWeaponLevel").innerText = "+" + (p.weapon.upgradeLevel || 0);
+        document.getElementById("upgWeaponDmg").innerText = p.weapon.damage;
+        
+        const cost = 100 * ((p.weapon.upgradeLevel || 0) + 1);
+        document.getElementById("upgWeaponCost").innerText = cost;
+        
+        const upgBtn = document.getElementById("btnUpgradeWeapon");
+        if (p.weapon.name === "Tay Không") {
+            upgBtn.innerText = "KHÔNG CÓ VŨ KHÍ";
+            upgBtn.setAttribute("disabled", "true");
+            upgBtn.classList.add("disabled");
+        } else if (p.gold < cost) {
+            upgBtn.innerText = `THIẾU VÀNG (${cost} Vàng)`;
+            upgBtn.setAttribute("disabled", "true");
+            upgBtn.classList.add("disabled");
+        } else {
+            upgBtn.innerText = `NÂNG CẤP (+3 SÁT THƯƠNG)`;
+            upgBtn.removeAttribute("disabled");
+            upgBtn.classList.remove("disabled");
+        }
+    }
+
+    // Cập nhật thông số bảng Kho chứa đồ
+    if (storageUIOpen) {
+        const sItems = p.storageItems || [];
+        document.getElementById("storageCount").innerText = sItems.length;
+        
+        // Repopulate Storage Grid
+        storageGrid.innerHTML = "";
+        for (let i = 0; i < 20; i++) {
+            const slot = document.createElement("div");
+            slot.className = "item-slot";
+            if (i < sItems.length) {
+                const item = sItems[i];
+                slot.style.borderColor = item.color;
+                slot.innerHTML = `
+                    <span class="slot-name" style="color: ${item.color}">${item.name}</span>
+                    <span class="slot-rarity" style="color: ${item.color}">${item.rarity}</span>
+                `;
+                slot.addEventListener("click", () => {
+                    if (socket && socket.readyState === WebSocket.OPEN) {
+                        socket.send(JSON.stringify({ type: "withdraw_weapon", index: i }));
+                    }
+                });
+            } else {
+                slot.classList.add("empty");
+                slot.innerHTML = `<span class="empty-text">(TRỐNG)</span>`;
+            }
+            storageGrid.appendChild(slot);
+        }
+        
+        // Repopulate Equip weapon slot
+        const weaponSlot = document.getElementById("equipWeaponSlot");
+        if (p.weapon && p.weapon.name !== "Tay Không") {
+            weaponSlot.classList.remove("empty");
+            weaponSlot.style.borderColor = p.weapon.color;
+            weaponSlot.innerHTML = `
+                <span class="slot-name" style="color: ${p.weapon.color}">${p.weapon.name}</span>
+                <span class="slot-rarity" style="color: ${p.weapon.color}">${p.weapon.rarity}</span>
+            `;
+            weaponSlot.onclick = () => {
+                if (socket && socket.readyState === WebSocket.OPEN) {
+                    socket.send(JSON.stringify({ type: "deposit_weapon" }));
+                }
+            };
+            weaponSlot.style.cursor = "pointer";
+        } else {
+            weaponSlot.classList.add("empty");
+            weaponSlot.style.borderColor = "#282830";
+            weaponSlot.innerHTML = `<span class="empty-text">(TRỐNG)</span>`;
+            weaponSlot.onclick = null;
+            weaponSlot.style.cursor = "default";
+        }
     }
 }
 
@@ -509,6 +689,28 @@ window.addEventListener("keydown", (e) => {
     if (e.key === "2") keys["2"] = true;
     if (key === "c") {
         statsPanel.classList.toggle("hidden");
+    }
+    if (e.key === "Escape") {
+        statsPanel.classList.add("hidden");
+        blacksmithPanel.classList.add("hidden");
+        storagePanel.classList.add("hidden");
+        blacksmithUIOpen = false;
+        storageUIOpen = false;
+    }
+    if (key === "t" && currentLevel !== 0) {
+        if (socket && socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify({ type: "use_portal_stone" }));
+        }
+    }
+    if (blacksmithUIOpen) {
+        if (e.key === "1") {
+            tabCraft.click();
+            e.preventDefault();
+        }
+        if (e.key === "2") {
+            tabUpgrade.click();
+            e.preventDefault();
+        }
     }
     if (key === "l") {
         if (socket && socket.readyState === WebSocket.OPEN) {
@@ -587,7 +789,33 @@ function inputTick() {
     }
     
     // reset nút tương tác E
-    if (keys.e) keys.e = false;
+    if (keys.e) {
+        if (currentLevel === 0 && localMapData) {
+            const distB = myPlayer && localMapData.merchantSpawn ? Math.sqrt((myPlayer.x - localMapData.merchantSpawn.x)**2 + (myPlayer.y - localMapData.merchantSpawn.y)**2) : Infinity;
+            const distS = myPlayer && localMapData.shopPedestals[0] ? Math.sqrt((myPlayer.x - localMapData.shopPedestals[0].x)**2 + (myPlayer.y - localMapData.shopPedestals[0].y)**2) : Infinity;
+            const distP = myPlayer && localMapData.shopPedestals[1] ? Math.sqrt((myPlayer.x - localMapData.shopPedestals[1].x)**2 + (myPlayer.y - localMapData.shopPedestals[1].y)**2) : Infinity;
+            
+            if (distB < 60) {
+                blacksmithUIOpen = !blacksmithUIOpen;
+                blacksmithPanel.classList.toggle("hidden");
+                storagePanel.classList.add("hidden");
+                storageUIOpen = false;
+                statsPanel.classList.add("hidden");
+                keys.e = false;
+            } else if (distS < 55) {
+                storageUIOpen = !storageUIOpen;
+                storagePanel.classList.toggle("hidden");
+                blacksmithPanel.classList.add("hidden");
+                blacksmithUIOpen = false;
+                statsPanel.classList.add("hidden");
+                keys.e = false;
+            } else if (distP < 60) {
+                socket.send(JSON.stringify({ type: "interact_portal" }));
+                keys.e = false;
+            }
+        }
+        if (keys.e) keys.e = false;
+    }
 }
 
 // 60 FPS CLIENT RENDER LOOP
@@ -683,6 +911,112 @@ function renderLoop() {
                     ctx.arc(sx, sy, 20 + Math.sin(Date.now() * 0.005) * 4, 0, 2*Math.PI);
                     ctx.fill();
                 }
+            }
+        }
+    }
+
+    // Vẽ các thực thể trong Sanctuary (Thợ Rèn, Kho Đồ, Portal)
+    if (currentLevel === 0 && localMapData) {
+        // 1. Thợ rèn
+        if (localMapData.merchantSpawn) {
+            const bx = localMapData.merchantSpawn.x - camera.shakeX;
+            const by = localMapData.merchantSpawn.y - camera.shakeY;
+            
+            ctx.fillStyle = "rgba(10, 10, 15, 0.5)";
+            ctx.beginPath();
+            ctx.ellipse(bx, by + 18, 18, 5, 0, 0, 2*Math.PI);
+            ctx.fill();
+            
+            ctx.fillStyle = "#3c2814"; // viền gỗ
+            ctx.fillRect(bx - 18, by - 22, 36, 40);
+            ctx.fillStyle = "#78501e"; // gỗ sáng
+            ctx.fillRect(bx - 14, by - 18, 28, 28);
+            
+            ctx.fillStyle = "#f0c81e";
+            ctx.font = "20px Outfit";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText("⚒", bx, by - 4);
+            
+            ctx.fillStyle = "#f0c81e";
+            ctx.font = "bold 9px Outfit";
+            ctx.fillText("THỢ RÈN", bx, by + 28);
+            
+            // Chỉ dẫn khoảng cách
+            const distB = myPlayer ? Math.sqrt((myPlayer.x - localMapData.merchantSpawn.x)**2 + (myPlayer.y - localMapData.merchantSpawn.y)**2) : Infinity;
+            if (distB < 60) {
+                ctx.fillStyle = "#ffffff";
+                ctx.font = "10px Outfit";
+                ctx.fillText("[E] Thực Hiện", bx, by - 32);
+            }
+        }
+        
+        // 2. Kho đồ
+        if (localMapData.shopPedestals.length > 0) {
+            const sx = localMapData.shopPedestals[0].x - camera.shakeX;
+            const sy = localMapData.shopPedestals[0].y - camera.shakeY;
+            
+            ctx.fillStyle = "rgba(10, 10, 15, 0.5)";
+            ctx.beginPath();
+            ctx.ellipse(sx, sy + 14, 16, 5, 0, 0, 2*Math.PI);
+            ctx.fill();
+            
+            ctx.fillStyle = "#1e1e23"; // viền sắt
+            ctx.fillRect(sx - 16, sy - 12, 32, 26);
+            ctx.fillStyle = "#28643c"; // màu xanh lục cho hòm đồ Sanctuary
+            ctx.fillRect(sx - 14, sy - 10, 28, 22);
+            
+            ctx.fillStyle = "#50dc78";
+            ctx.font = "14px Outfit";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText("■", sx, sy + 1);
+            
+            ctx.fillStyle = "#50dc78";
+            ctx.font = "bold 9px Outfit";
+            ctx.fillText("KHO ĐỒ", sx, sy + 22);
+            
+            const distS = myPlayer ? Math.sqrt((myPlayer.x - localMapData.shopPedestals[0].x)**2 + (myPlayer.y - localMapData.shopPedestals[0].y)**2) : Infinity;
+            if (distS < 55) {
+                ctx.fillStyle = "#ffffff";
+                ctx.font = "10px Outfit";
+                ctx.fillText("[E] Mở Kho", sx, sy - 22);
+            }
+        }
+        
+        // 3. Portal
+        if (localMapData.shopPedestals.length > 1) {
+            const px = localMapData.shopPedestals[1].x - camera.shakeX;
+            const py = localMapData.shopPedestals[1].y - camera.shakeY;
+            
+            const pulse = Math.abs(Math.sin(Date.now() * 0.003)) * 0.5 + 0.5;
+            const portalColor = `rgba(180, 100, 255, ${pulse})`;
+            
+            ctx.fillStyle = "rgba(20, 10, 40, 0.4)";
+            ctx.beginPath();
+            ctx.arc(px, py, 22, 0, 2*Math.PI);
+            ctx.fill();
+            
+            ctx.strokeStyle = portalColor;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(px, py, 22, 0, 2*Math.PI);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(px, py, 16, 0, 2*Math.PI);
+            ctx.stroke();
+            
+            ctx.fillStyle = portalColor;
+            ctx.font = "18px Outfit";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText("★", px, py);
+            
+            const distP = myPlayer ? Math.sqrt((myPlayer.x - localMapData.shopPedestals[1].x)**2 + (myPlayer.y - localMapData.shopPedestals[1].y)**2) : Infinity;
+            if (distP < 60) {
+                ctx.fillStyle = "#ffffff";
+                ctx.font = "10px Outfit";
+                ctx.fillText("[E] Hầm Ngục", px, py - 30);
             }
         }
     }
@@ -787,6 +1121,32 @@ function renderLoop() {
             
             ctx.fillStyle = item.weapon.color;
             ctx.fillText(item.weapon.name, rx - textWidth/2, itemY - 15);
+        } else if (item.itemType === "portal_stone") {
+            // Vẽ Đá dịch chuyển trôi nổi (màu tím sáng nhấp nháy, hình ngôi sao bên trong)
+            const pulse = Math.abs(Math.sin(Date.now() * 0.005)) * 0.4 + 0.6;
+            ctx.fillStyle = `rgba(180, 100, 255, ${pulse})`;
+            ctx.strokeStyle = "#4b1e78";
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.arc(rx, itemY, 7, 0, 2*Math.PI);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = "#ffffff";
+            ctx.font = "bold 9px Outfit";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText("★", rx, itemY);
+
+            // Nhãn tên "Đá Dịch Chuyển"
+            ctx.font = "bold 9px Consolas";
+            const textWidth = ctx.measureText("Đá Dịch Chuyển").width;
+            ctx.fillStyle = "rgba(10, 10, 15, 0.8)";
+            ctx.fillRect(rx - textWidth/2 - 4, itemY - 22, textWidth + 8, 12);
+            ctx.fillStyle = "#b464ff";
+            ctx.textAlign = "left";
+            ctx.textBaseline = "alphabetic";
+            ctx.fillText("Đá Dịch Chuyển", rx - textWidth/2, itemY - 13);
         }
     });
 

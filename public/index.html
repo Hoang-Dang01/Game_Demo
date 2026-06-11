@@ -3,19 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SAO: Hầm Ngục Trực Tuyến (Co-op RPG)</title>
+    <title>CORE OF RUIN: Co-op Dungeon Crawler</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <!-- 1. MÀN HÌNH CHỜ (LOBBY SCREEN) -->
     <div id="lobbyScreen" class="overlay-screen">
         <div class="lobby-container">
-            <h1 class="glow-title">DUNGEON RPG ONLINE</h1>
-            <p class="subtitle">Sword Art Online 2D Co-op Edition</p>
+            <h1 class="glow-title">CORE OF RUIN</h1>
+            <p class="subtitle">Co-op Action RPG & Crafting Crawler</p>
             
             <div class="form-group">
                 <label for="nickname">Biệt danh của bạn</label>
-                <input type="text" id="nickname" maxlength="12" placeholder="Nhập biệt danh..." value="Kirisaki">
+                <input type="text" id="nickname" maxlength="12" placeholder="Nhập biệt danh..." value="Explorer">
             </div>
 
             <div class="form-group">
@@ -83,6 +83,12 @@
             <div class="hud-row">
                 <span id="hudName" class="player-name">Player</span>
                 <span id="hudLevel" class="player-level">LV.1</span>
+            </div>
+            
+            <!-- Floor & Portal Stones Row -->
+            <div class="hud-row hud-floor-portal">
+                <span id="hudFloor" class="color-gold">SANCTUARY</span>
+                <span id="hudPortalStones" class="portal-tag">[T] Portal (3)</span>
             </div>
             
             <!-- HP Bar -->
@@ -195,6 +201,59 @@
             <div class="boss-hp-bg">
                 <div id="bossHpFill" class="boss-hp-fill" style="width: 100%;"></div>
                 <span id="bossHpText" class="boss-hp-text">500/500</span>
+            </div>
+        </div>
+
+        <!-- BẢNG THỢ RÈN (BLACKSMITH PANEL) -->
+        <div id="blacksmithPanel" class="hud-panel center-panel hidden">
+            <div class="panel-header">
+                <span class="panel-title">⚒ THỢ RÈN — SANCTUARY</span>
+                <button id="btnExitBlacksmith" class="btn-close">×</button>
+            </div>
+            <div class="tabs-header">
+                <button id="tabCraft" class="tab-btn active">CHẾ TẠO [1]</button>
+                <button id="tabUpgrade" class="tab-btn">NÂNG CẤP [2]</button>
+            </div>
+            <div id="craftTabContent" class="tab-content">
+                <p class="placeholder-text">— Công thức chế tạo sẽ xuất hiện ở Phase 3 —</p>
+                <p class="placeholder-sub">Nguyên liệu: Mảnh Sắt, Gỗ Cổ, Lông Thú...</p>
+            </div>
+            <div id="upgradeTabContent" class="tab-content hidden">
+                <div class="upgrade-info">
+                    <p>Vũ khí hiện tại: <strong id="upgWeaponName" class="color-gold">Kiếm Tập Sự</strong></p>
+                    <p>Cấp nâng cấp: <strong id="upgWeaponLevel">+0</strong></p>
+                    <p>Sát thương hiện tại: <strong id="upgWeaponDmg">20</strong></p>
+                    <p class="upgrade-cost">Chi phí nâng cấp: <strong id="upgWeaponCost" class="color-gold">100</strong> Vàng</p>
+                </div>
+                <button id="btnUpgradeWeapon" class="btn-primary">NÂNG CẤP (+3 SÁT THƯƠNG)</button>
+            </div>
+        </div>
+
+        <!-- BẢNG KHO CHỨA ĐỒ (STORAGE CHEST PANEL) -->
+        <div id="storagePanel" class="hud-panel center-panel hidden">
+            <div class="panel-header">
+                <span class="panel-title">■ KHO CHỨA ĐỒ SANCTUARY</span>
+                <button id="btnExitStorage" class="btn-close">×</button>
+            </div>
+            <div class="storage-columns">
+                <div class="storage-column">
+                    <h4>KHO CHỨA ĐỒ (<span id="storageCount">0</span>/20)</h4>
+                    <div id="storageGrid" class="item-grid">
+                        <!-- Slots will be populated by JS -->
+                    </div>
+                </div>
+                <div class="storage-column">
+                    <h4>TRANG BỊ CỦA BẠN</h4>
+                    <div class="equip-slots">
+                        <div class="equip-slot-container">
+                            <span class="slot-label">VŨ KHÍ</span>
+                            <div id="equipWeaponSlot" class="item-slot empty">
+                                <span class="empty-text">(TRỐNG)</span>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="storage-tip">Nhấp chuột vào vật phẩm để Cất vào / Rút ra khỏi kho đồ.</p>
+                </div>
             </div>
         </div>
 

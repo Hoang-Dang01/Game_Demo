@@ -3,7 +3,7 @@ const express = require('express');
 const http = require('http');
 const WebSocket = require('ws');
 const path = require('path');
-const { generateDungeon, SeededRandom } = require('./shared/dungeon_generator.js');
+const { generateDungeon, generateSanctuary, SeededRandom } = require('./shared/dungeon_generator.js');
 const { generateRandomWeapon } = require('./shared/weapon_system.js');
 
 const app = express();
@@ -40,9 +40,9 @@ function recalculatePlayerAttributes(p) {
 }
 
 // Hàm tạo phòng mới
-function createRoom(roomId, level = 1) {
+function createRoom(roomId, level = 0) {
     const seed = Math.floor(Math.random() * 999999);
-    const mapData = generateDungeon(seed, level);
+    const mapData = level === 0 ? generateSanctuary() : generateDungeon(seed, level);
     
     const room = {
         id: roomId,
@@ -53,7 +53,8 @@ function createRoom(roomId, level = 1) {
         playerCount: 0,
         nextEntityId: 1,
         state: "PLAYING", // "PLAYING", "GAMEOVER"
-        stairsLocked: level % 5 === 0 // Tầng Boss sẽ khóa cổng thoát
+        stairsLocked: level !== 0 && level % 5 === 0, // Tầng Boss sẽ khóa cổng thoát
+        returnPortal: { floor: 1, seed: 0, x: 0, y: 0, active: false }
     };
 
     // Spawn các thực thể ban đầu trong hầm ngục
@@ -64,6 +65,10 @@ function createRoom(roomId, level = 1) {
 
 function spawnDungeonEntities(room) {
     room.entities.clear();
+    
+    if (room.level === 0) {
+        return;
+    }
     
     // 1. Spawning Rương báu (Chests)
     room.mapData.chests.forEach(pos => {
@@ -136,7 +141,7 @@ wss.on('connection', (ws) => {
                     if (currentRoom && currentRoom.playerCount >= 4) {
                         reqRoomId = "dungeon_" + (rooms.size + 1);
                     }
-                    currentRoom = createRoom(reqRoomId, 1);
+                    currentRoom = createRoom(reqRoomId, 0);
                 }
 
                 // Thiết lập nhân vật
@@ -170,6 +175,10 @@ wss.on('connection', (ws) => {
                     gold: 0,
                     xp: 0,
                     level: 1,
+                    
+                    // Sanctuary state
+                    portalStoneCount: 3,
+                    storageItems: [],
                     
                     isDashing: false,
                     dashTimer: 0,
@@ -247,6 +256,188 @@ wss.on('connection', (ws) => {
                     playerEntity.mp = playerEntity.maxMp;
                     
                     sendPrivateText(playerEntity, `LÊN CẤP! Cấp ${playerEntity.level}`, "#f0c81e");
+                }
+            }
+            // 5. Packet nâng cấp vũ khí (Blacksmith)
+            else if (packet.type === "upgrade_weapon" && playerEntity && currentRoom) {
+                if (currentRoom.level !== 0 || !currentRoom.mapData.merchantSpawn) return;
+                const bx = currentRoom.mapData.merchantSpawn.x;
+                const by = currentRoom.mapData.merchantSpawn.y;
+                const dist = Math.sqrt((playerEntity.x - bx) ** 2 + (playerEntity.y - by) ** 2);
+                if (dist < 70) {
+                    if (playerEntity.weapon && playerEntity.weapon.name !== "Tay Không") {
+                        const upgLevel = playerEntity.weapon.upgradeLevel || 0;
+                        const cost = 100 * (upgLevel + 1);
+                        if (playerEntity.gold >= cost) {
+                            playerEntity.gold -= cost;
+                            playerEntity.weapon.upgradeLevel = upgLevel + 1;
+                            playerEntity.weapon.damage += 3;
+                            playerEntity.weapon.name = playerEntity.weapon.name.replace(/\s\+\d+$/, "") + " +" + playerEntity.weapon.upgradeLevel;
+                            
+                            recalculatePlayerAttributes(playerEntity);
+                            
+                            sendPrivateText(playerEntity, `${playerEntity.weapon.name} nâng lên +${playerEntity.weapon.upgradeLevel}!`, "#f0be1e");
+                        } else {
+                            sendPrivateText(playerEntity, "Không đủ Vàng!", "#ff3250");
+                        }
+                    } else {
+                        sendPrivateText(playerEntity, "Không có vũ khí để nâng cấp!", "#ff3250");
+                    }
+                }
+            }
+            // 6. Packet cất vũ khí vào kho (Storage Chest)
+            else if (packet.type === "deposit_weapon" && playerEntity && currentRoom) {
+                if (currentRoom.level !== 0 || currentRoom.mapData.shopPedestals.length === 0) return;
+                const sx = currentRoom.mapData.shopPedestals[0].x;
+                const sy = currentRoom.mapData.shopPedestals[0].y;
+                const dist = Math.sqrt((playerEntity.x - sx) ** 2 + (playerEntity.y - sy) ** 2);
+                if (dist < 65) {
+                    if (!playerEntity.storageItems) playerEntity.storageItems = [];
+                    if (playerEntity.storageItems.length >= 20) {
+                        sendPrivateText(playerEntity, "Kho đồ đầy!", "#ff3250");
+                        return;
+                    }
+                    if (playerEntity.weapon && playerEntity.weapon.name !== "Tay Không") {
+                        playerEntity.storageItems.push(playerEntity.weapon);
+                        playerEntity.weapon = {
+                            name: "Tay Không",
+                            classLimit: "",
+                            type: "melee",
+                            rarity: "Common",
+                            color: "#8a8a98",
+                            damage: 5,
+                            cooldown: 15,
+                            range: 45,
+                            speed: 0,
+                            splashRadius: 0,
+                            critChance: 0.05,
+                            attackSpeedBonus: 0,
+                            upgradeLevel: 0
+                        };
+                        sendPrivateText(playerEntity, "Đã cất vũ khí vào kho!", "#50dc50");
+                    } else {
+                        sendPrivateText(playerEntity, "Không có vũ khí để cất!", "#ff3250");
+                    }
+                }
+            }
+            // 7. Packet rút vũ khí khỏi kho (Storage Chest)
+            else if (packet.type === "withdraw_weapon" && playerEntity && currentRoom) {
+                if (currentRoom.level !== 0 || currentRoom.mapData.shopPedestals.length === 0) return;
+                const sx = currentRoom.mapData.shopPedestals[0].x;
+                const sy = currentRoom.mapData.shopPedestals[0].y;
+                const dist = Math.sqrt((playerEntity.x - sx) ** 2 + (playerEntity.y - sy) ** 2);
+                if (dist < 65) {
+                    const idx = packet.index;
+                    if (!playerEntity.storageItems || idx < 0 || idx >= playerEntity.storageItems.length) return;
+                    const storedWeapon = playerEntity.storageItems[idx];
+                    if (storedWeapon) {
+                        if (playerEntity.weapon && playerEntity.weapon.name !== "Tay Không") {
+                            playerEntity.storageItems[idx] = playerEntity.weapon;
+                            playerEntity.weapon = storedWeapon;
+                            sendPrivateText(playerEntity, `Đổi vũ khí với kho!`, "#50dc50");
+                        } else {
+                            playerEntity.weapon = storedWeapon;
+                            playerEntity.storageItems.splice(idx, 1);
+                            sendPrivateText(playerEntity, `Rút: ${storedWeapon.name}`, "#50dc50");
+                        }
+                    }
+                }
+            }
+            // 8. Packet dùng Đá Dịch Chuyển (Portal Stone)
+            else if (packet.type === "use_portal_stone" && playerEntity && currentRoom) {
+                if (currentRoom.level === 0) return;
+                if (playerEntity.hp <= 0) return;
+                if ((playerEntity.portalStoneCount || 0) > 0) {
+                    playerEntity.portalStoneCount--;
+                    
+                    currentRoom.returnPortal = {
+                        floor: currentRoom.level,
+                        seed: currentRoom.seed,
+                        x: playerEntity.x,
+                        y: playerEntity.y,
+                        active: true
+                    };
+                    
+                    currentRoom.level = 0;
+                    currentRoom.stairsLocked = false;
+                    currentRoom.mapData = generateSanctuary();
+                    
+                    const pList = Array.from(currentRoom.entities.values()).filter(e => e.type === "player");
+                    pList.forEach(p => {
+                        p.x = currentRoom.mapData.playerSpawn.x;
+                        p.y = currentRoom.mapData.playerSpawn.y;
+                    });
+                    
+                    spawnDungeonEntities(currentRoom);
+                    
+                    broadcastToRoom(currentRoom, {
+                        type: "next_floor",
+                        level: currentRoom.level,
+                        seed: currentRoom.seed,
+                        stairsLocked: false,
+                        playerSpawn: currentRoom.mapData.playerSpawn
+                    });
+                    
+                    broadcastToRoom(currentRoom, {
+                        type: "combat_text", x: playerEntity.x, y: playerEntity.y - 30,
+                        text: "Dịch chuyển về Sanctuary!", color: "#b464ff"
+                    });
+                } else {
+                    sendPrivateText(playerEntity, "Không có Đá Dịch Chuyển!", "#ff3250");
+                }
+            }
+            // 9. Packet tương tác với Portal để quay lại Dungeon
+            else if (packet.type === "interact_portal" && playerEntity && currentRoom) {
+                if (currentRoom.level !== 0 || currentRoom.mapData.shopPedestals.length < 2) return;
+                const px = currentRoom.mapData.shopPedestals[1].x;
+                const py = currentRoom.mapData.shopPedestals[1].y;
+                const dist = Math.sqrt((playerEntity.x - px) ** 2 + (playerEntity.y - py) ** 2);
+                if (dist < 70) {
+                    const ret = currentRoom.returnPortal;
+                    if (ret && ret.active) {
+                        currentRoom.level = ret.floor;
+                        currentRoom.seed = ret.seed;
+                        currentRoom.stairsLocked = currentRoom.level % 5 === 0;
+                        currentRoom.mapData = generateDungeon(currentRoom.seed, currentRoom.level);
+                        
+                        const pList = Array.from(currentRoom.entities.values()).filter(e => e.type === "player");
+                        pList.forEach(p => {
+                            p.x = ret.x;
+                            p.y = ret.y;
+                        });
+                        
+                        spawnDungeonEntities(currentRoom);
+                        ret.active = false;
+                        
+                        broadcastToRoom(currentRoom, {
+                            type: "next_floor",
+                            level: currentRoom.level,
+                            seed: currentRoom.seed,
+                            stairsLocked: currentRoom.stairsLocked,
+                            playerSpawn: { x: ret.x, y: ret.y }
+                        });
+                    } else {
+                        currentRoom.level = 1;
+                        currentRoom.seed = Math.floor(Math.random() * 999999);
+                        currentRoom.stairsLocked = false;
+                        currentRoom.mapData = generateDungeon(currentRoom.seed, currentRoom.level);
+                        
+                        const pList = Array.from(currentRoom.entities.values()).filter(e => e.type === "player");
+                        pList.forEach(p => {
+                            p.x = currentRoom.mapData.playerSpawn.x;
+                            p.y = currentRoom.mapData.playerSpawn.y;
+                        });
+                        
+                        spawnDungeonEntities(currentRoom);
+                        
+                        broadcastToRoom(currentRoom, {
+                            type: "next_floor",
+                            level: currentRoom.level,
+                            seed: currentRoom.seed,
+                            stairsLocked: false,
+                            playerSpawn: currentRoom.mapData.playerSpawn
+                        });
+                    }
                 }
             }
         } catch (e) {
@@ -342,8 +533,15 @@ function logicTick() {
             }
         });
 
-        // Hồi phục HP/MP thụ động (1Hz)
-        if (doRegen) {
+        // Hồi phục HP/MP thụ động (mỗi tick ở Sanctuary, 1Hz ở Dungeon)
+        if (room.level === 0) {
+            players.forEach(p => {
+                if (p.hp > 0) {
+                    p.hp = Math.min(p.maxHp, p.hp + 0.5);
+                    p.mp = Math.min(p.maxMp, p.mp + 0.75);
+                }
+            });
+        } else if (doRegen) {
             players.forEach(p => {
                 if (p.hp > 0) {
                     const hpRegen = 1 + p.stats.vigor * 0.1;
@@ -688,6 +886,9 @@ function logicTick() {
                                 p.mp = p.maxMp;
                                 sendPrivateText(p, `LÊN CẤP! Cấp ${p.level}`, "#f0c81e");
                             }
+                        } else if (item.itemType === "portal_stone") {
+                            p.portalStoneCount = (p.portalStoneCount || 0) + 1;
+                            sendPrivateText(p, `+1 Đá Dịch Chuyển`, "#b464ff");
                         } else if (item.itemType === "weapon") {
                             // Phải cùng Class mới cho nhặt vũ khí
                             if (item.weapon.classLimit === p.classType) {
@@ -700,7 +901,7 @@ function logicTick() {
             });
 
                 // 5. Kiểm tra xuống hầm sâu hơn (Cầu thang)
-                if (!room.stairsLocked) {
+                if (!room.stairsLocked && room.level !== 0) {
                     const sx = room.mapData.stairsSpawn.x;
                     const sy = room.mapData.stairsSpawn.y;
                     const dx = p.x - sx;
@@ -811,6 +1012,14 @@ function openChest(room, chest, player) {
             x: chest.x + (i === 0 ? -12 : 12), y: chest.y - 10, radius: 8, val: Math.floor(Math.random() * 15) + 10
         });
     }
+
+    // Rơi Đá Dịch Chuyển (25% cơ hội)
+    if (Math.random() < 0.25) {
+        const portalStoneId = "i_" + room.nextEntityId++;
+        room.entities.set(portalStoneId, {
+            id: portalStoneId, type: "item", itemType: "portal_stone", x: chest.x, y: chest.y - 16, radius: 8, val: 1
+        });
+    }
 }
 
 // Đổi tầng khi bước vào cầu thang
@@ -874,7 +1083,9 @@ function networkSync() {
                     mp: Math.round(p.mp), maxMp: p.maxMp,
                     freeStatPoints: p.freeStatPoints, stats: p.stats,
                     weapon: p.weapon, gold: p.gold, xp: p.xp, level: p.level,
-                    isDashing: p.isDashing, angle: p.angle
+                    isDashing: p.isDashing, angle: p.angle,
+                    portalStoneCount: p.portalStoneCount || 0,
+                    storageItems: p.storageItems || []
                 })),
             enemies: Array.from(room.entities.values())
                 .filter(e => e.type === "enemy" || e.type === "boss")
